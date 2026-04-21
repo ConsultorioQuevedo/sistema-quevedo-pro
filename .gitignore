@@ -1,0 +1,10 @@
+# Archivos de configuración privada
+config.py
+*.db
+*.log
+
+# Carpetas de Python
+__pycache__/
+.streamlit/
+venv/
+.env
