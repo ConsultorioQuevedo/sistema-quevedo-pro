@@ -32,6 +32,15 @@ def inicializar_todo():
         c.execute('''CREATE TABLE IF NOT EXISTS finanzas (
                      id INTEGER PRIMARY KEY AUTOINCREMENT,
                      fecha TEXT, descripcion TEXT, monto REAL, tipo TEXT)''')
+
+        # --- REFUERZO: TABLA ARCHIVADOR PARA DOCUMENTOS ---
+        c.execute('''CREATE TABLE IF NOT EXISTS archivador (
+                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                     fecha TEXT,
+                     nombre_archivo TEXT NOT NULL,
+                     categoria TEXT,
+                     descripcion TEXT,
+                     ruta_local TEXT)''')
         
         conn.commit()
         return conn, c
