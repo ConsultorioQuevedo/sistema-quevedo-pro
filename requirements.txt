@@ -1,0 +1,9 @@
+streamlit
+pandas
+pytz
+pytesseract
+st-gsheets-connection
+plotly
+opencv-python-headless
+fpdf
+google-generativeai
