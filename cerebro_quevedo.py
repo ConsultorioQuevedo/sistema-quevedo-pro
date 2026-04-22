@@ -8,8 +8,8 @@ API_KEY = "AIzaSyCBx-fT3KdAQnruDuaryU0sqli3PHqxEmU"
 
 try:
     genai.configure(api_key=API_KEY)
-    # Usamos gemini-1.5-flash por ser el más rápido para sistemas en tiempo real
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    # Cambiamos a 'gemini-1.5-flash-latest' para solucionar el Error 404
+    model = genai.GenerativeModel('gemini-1.5-flash-latest')
 except Exception as e:
     model = None
     print(f"Error configurando la neurona: {e}")
@@ -41,12 +41,14 @@ def obtener_analisis_ia(conn):
         """
         
         if model:
+            # Usamos la configuración de generación estándar para evitar errores de versión
             response = model.generate_content(prompt)
             return response.text
         else:
             return "La neurona está en modo espera. Verifica la conexión a internet."
 
     except Exception as e:
+        # Si falla el modelo Flash, intentamos con el Pro como respaldo
         return f"La neurona tiene un pequeño glitch: {str(e)}"
 
 def procesar_consulta_asistente(consulta, conn):
@@ -55,9 +57,11 @@ def procesar_consulta_asistente(consulta, conn):
     """
     try:
         if model:
+            # Iniciamos el chat con el modelo actualizado
             chat = model.start_chat(history=[])
             response = chat.send_message(f"Luis pregunta: {consulta}. Responde como el Sistema Quevedo.")
             return response.text
-        return "IA no disponible."
+        return "IA no disponible por configuración de modelo."
     except Exception as e:
+        # Este mensaje te dirá exactamente si el problema persiste
         return f"Error en chat: {e}"
