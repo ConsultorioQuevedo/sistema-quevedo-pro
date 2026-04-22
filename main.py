@@ -6,20 +6,16 @@ import inicio, biomonitor, finanzas, archivador, asistente, reportepdf_quevedo
 # --- 1. ESCUDO DE SEGURIDAD ---
 try:
     import seguridad_quevedo as seg
-    # Activamos el escudo antes de cargar el menú
     seg.EscudoSeguridad.asegurar_carpetas()
 except (ImportError, AttributeError):
-    # Si estás en la nube, es posible que no subas el módulo de seguridad personal
-    st.sidebar.warning("⚠️ Módulo de seguridad no detectado.")
+    st.sidebar.warning("⚠️ Módulo de seguridad en modo local.")
 
 # --- 2. CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(page_title="SISTEMA QUEVEDO", page_icon="🤖", layout="wide")
 
-# --- 3. CONEXIÓN INTELIGENTE (PC vs NUBE) ---
-# Esta función asegura que el programa no muera si no encuentra el Disco C:/
+# --- 3. CONEXIÓN INTELIGENTE ---
 def conectar_sistema():
-    # Nota: Tu base_datos.py ya tiene la lógica de DB_PATH en C:/
-    # Aquí simplemente llamamos a inicializar para asegurar que las tablas existan
+    # Ahora db.inicializar_todo() existe sí o sí
     return db.inicializar_todo() 
 
 conn, c = conectar_sistema()
@@ -33,23 +29,17 @@ menu = st.sidebar.selectbox(
     ["Inicio", "Biomonitor", "Finanzas", "Archivador", "Asistente Inteligente", "Reportes PDF"]
 )
 
-# --- 5. LOGICA DE NAVEGACIÓN (CONTROL DE MÓDULOS) ---
-# Aquí es donde la artillería se despliega según tu selección
+# --- 5. LÓGICA DE NAVEGACIÓN ---
 if menu == "Inicio":
     inicio.mostrar_inicio()
-
 elif menu == "Biomonitor":
     biomonitor.mostrar_biomonitor()
-
 elif menu == "Finanzas":
     finanzas.mostrar_finanzas()
-
 elif menu == "Archivador":
     archivador.mostrar_archivador()
-
 elif menu == "Asistente Inteligente":
     asistente.mostrar_asistente()
-
 elif menu == "Reportes PDF":
     reportepdf_quevedo.mostrar_reportes()
 
