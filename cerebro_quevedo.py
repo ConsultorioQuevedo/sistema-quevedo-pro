@@ -1,55 +1,63 @@
-import streamlit as st
 import google.generativeai as genai
+import pandas as pd
+import sqlite3
 import os
 
-def configurar_neurona():
-    """Configura la conexión con la máxima seguridad."""
-    # Prioridad 1: Secrets de Streamlit (Nube) | Prioridad 2: Archivo local (PC)
-    api_key = st.secrets.get("API_KEY_QUEVEDO")
-    if not api_key:
-        try:
-            import config
-            api_key = config.API_KEY_QUEVEDO
-        except ImportError:
-            api_key = None
-    
-    if api_key:
-        genai.configure(api_key=api_key)
-        return True
-    return False
+# --- CONFIGURACIÓN DE LA NEURONA ---
+API_KEY = "AIzaSyCBx-fT3KdAQnruDuaryU0sqli3PHqxEmU"
 
-def consultar_especialista(pregunta_paciente, contexto_previo=""):
+try:
+    genai.configure(api_key=API_KEY)
+    # Usamos gemini-1.5-flash por ser el más rápido para sistemas en tiempo real
+    model = genai.GenerativeModel('gemini-1.5-flash')
+except Exception as e:
+    model = None
+    print(f"Error configurando la neurona: {e}")
+
+def obtener_analisis_ia(conn):
     """
-    Activa al especialista médico de alto nivel.
-    Inyectamos un 'System Prompt' que define su personalidad y conocimientos.
+    Lee los datos reales de Luis y genera un diagnóstico inteligente.
     """
-    if not configurar_neurona():
-        return "⚠️ Error de conexión: La neurona no tiene acceso a la API Key."
-
-    # --- EL CEREBRO DEL ESPECIALISTA (SYSTEM INSTRUCTION) ---
-    instrucciones_maestras = (
-        "Actúa como el Director Médico del Consultorio Quevedo, un especialista de élite "
-        "con conocimientos avanzados en medicina interna, cardiología y gestión de salud. "
-        "Tu objetivo es analizar datos de pacientes, interpretar tendencias de presión y glucosa, "
-        "y ofrecer orientación clínica basada en evidencia. "
-        "Sé profesional, preciso, humano pero analítico. "
-        "Si el usuario te da datos del 'Archivador' o de 'Salud', relaciónalos para dar un diagnóstico preventivo."
-    )
-
     try:
-        # Usamos el modelo más potente disponible
-        model = genai.GenerativeModel(
-            model_name='gemini-1.5-flash', # O 'gemini-1.5-pro' para máxima escala
-            system_instruction=instrucciones_maestras
-        )
+        # 1. Extraer datos para que la IA sepa de qué habla
+        df_salud = pd.read_sql_query("SELECT glucosa, presion FROM salud ORDER BY id DESC LIMIT 1", conn)
+        df_finanzas = pd.read_sql_query("SELECT monto, descripcion, tipo FROM finanzas ORDER BY id DESC LIMIT 5", conn)
         
-        # Iniciamos un chat para que tenga memoria de la conversación
-        chat = model.start_chat(history=[])
+        # 2. Resumen para el Prompt
+        datos_salud = df_salud.to_dict('records') if not df_salud.empty else "Sin registros recientes"
+        datos_finanzas = df_finanzas.to_dict('records') if not df_finanzas.empty else "Sin movimientos"
         
-        prompt_final = f"Contexto del paciente: {contexto_previo}\n\nPregunta/Caso: {pregunta_paciente}"
+        # 3. El Prompt Maestro
+        prompt = f"""
+        Eres la 'Neurona Principal' del Sistema Quevedo Pro. 
+        Tu usuario es Luis Rafael Quevedo, un experto en tecnología y bases de datos.
         
-        respuesta = chat.send_message(prompt_final)
-        return respuesta.text
+        Analiza estos datos actuales:
+        - Salud: {datos_salud}
+        - Finanzas: {datos_finanzas}
+        
+        Da un consejo breve, técnico y motivador. Si ves que hay ingresos (como los RD$257), 
+        felicítalo por mantener el flujo de caja. No uses introducciones largas.
+        """
+        
+        if model:
+            response = model.generate_content(prompt)
+            return response.text
+        else:
+            return "La neurona está en modo espera. Verifica la conexión a internet."
 
     except Exception as e:
-        return f"❌ La neurona encontró un obstáculo: {str(e)}"
+        return f"La neurona tiene un pequeño glitch: {str(e)}"
+
+def procesar_consulta_asistente(consulta, conn):
+    """
+    Para el chat interactivo del módulo Asistente.
+    """
+    try:
+        if model:
+            chat = model.start_chat(history=[])
+            response = chat.send_message(f"Luis pregunta: {consulta}. Responde como el Sistema Quevedo.")
+            return response.text
+        return "IA no disponible."
+    except Exception as e:
+        return f"Error en chat: {e}"
