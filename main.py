@@ -8,7 +8,7 @@ try:
     import seguridad_quevedo as seg
     # Activamos el escudo antes de cargar el menú
     seg.EscudoSeguridad.asegurar_carpetas()
-except ImportError:
+except (ImportError, AttributeError):
     # Si estás en la nube, es posible que no subas el módulo de seguridad personal
     st.sidebar.warning("⚠️ Módulo de seguridad no detectado.")
 
@@ -18,14 +18,9 @@ st.set_page_config(page_title="SISTEMA QUEVEDO", page_icon="🤖", layout="wide"
 # --- 3. CONEXIÓN INTELIGENTE (PC vs NUBE) ---
 # Esta función asegura que el programa no muera si no encuentra el Disco C:/
 def conectar_sistema():
-    ruta_local = "C:/sistema_quevedo/consultorio.db"
-    if os.path.exists(ruta_local):
-        # Si existe la ruta en tu Dell, la usamos
-        return db.inicializar_todo() # Asumimos que esto devuelve (conn, c)
-    else:
-        # Si estamos en Streamlit Cloud, inicializamos en la carpeta actual
-        # Nota: Asegúrate de que tu base_datos.py acepte crear la DB localmente
-        return db.inicializar_todo() 
+    # Nota: Tu base_datos.py ya tiene la lógica de DB_PATH en C:/
+    # Aquí simplemente llamamos a inicializar para asegurar que las tablas existan
+    return db.inicializar_todo() 
 
 conn, c = conectar_sistema()
 
@@ -38,24 +33,26 @@ menu = st.sidebar.selectbox(
     ["Inicio", "Biomonitor", "Finanzas", "Archivador", "Asistente Inteligente", "Reportes PDF"]
 )
 
-st.sidebar.divider()
-
-# --- 5. EJECUCIÓN DE MÓDULOS ---
+# --- 5. LOGICA DE NAVEGACIÓN (CONTROL DE MÓDULOS) ---
+# Aquí es donde la artillería se despliega según tu selección
 if menu == "Inicio":
-    inicio.mostrar_inicio(conn)
-elif menu == "Biomonitor":
-    biomonitor.mostrar_biomonitor(conn, c)
-elif menu == "Finanzas":
-    finanzas.mostrar_finanzas(conn, c)
-elif menu == "Archivador":
-    archivador.mostrar_archivador(conn, c)
-elif menu == "Asistente Inteligente":
-    asistente.mostrar_asistente(conn, c)
-elif menu == "Reportes PDF":
-    reportepdf_quevedo.mostrar_pdf(conn)
+    inicio.mostrar_inicio()
 
-# --- 6. PIE DE PÁGINA DINÁMICO ---
-if os.path.exists("C:/"):
-    st.sidebar.success("✅ Conectado localmente al Disco C:/")
-else:
-    st.sidebar.info("🌐 Ejecutando en la Nube (Streamlit Cloud)")
+elif menu == "Biomonitor":
+    biomonitor.mostrar_biomonitor()
+
+elif menu == "Finanzas":
+    finanzas.mostrar_finanzas()
+
+elif menu == "Archivador":
+    archivador.mostrar_archivador()
+
+elif menu == "Asistente Inteligente":
+    asistente.mostrar_asistente()
+
+elif menu == "Reportes PDF":
+    reportepdf_quevedo.mostrar_reportes()
+
+# --- 6. PIE DE PÁGINA ---
+st.sidebar.markdown("---")
+st.sidebar.info("Sistema Quevedo Pro v2.0 - Activo")
