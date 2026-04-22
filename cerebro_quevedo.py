@@ -1,53 +1,46 @@
 import google.generativeai as genai
 import pandas as pd
-import sqlite3
 
-# --- LA NUEVA LLAVE MAESTRA ---
+# --- CONFIGURACIÓN CON TU LLAVE CONFIRMADA ---
 API_KEY = "AIzaSyB9tbJzUuo6TjgaWbu70ph93c_HUtfUW7o"
 
 def conectar_neurona():
     try:
         genai.configure(api_key=API_KEY)
-        
-        # Intentamos los 3 nombres posibles para evitar el error 404
-        for nombre_modelo in ['gemini-1.5-flash', 'gemini-1.5-flash-latest', 'gemini-pro']:
-            try:
-                model = genai.GenerativeModel(nombre_modelo)
-                # Prueba rápida de vida
-                model.generate_content("test") 
-                print(f"✅ Neurona activada con: {nombre_modelo}")
-                return model
-            except:
-                continue
-        return None
+        # Usamos uno de los modelos que tu terminal confirmó que tienes (2.0 Flash)
+        # El nombre debe ser exacto como salió en tu lista
+        model = genai.GenerativeModel('gemini-2.0-flash')
+        return model
     except Exception as e:
-        print(f"Error de configuración: {e}")
+        print(f"Error al conectar: {e}")
         return None
 
-# Inicializamos el modelo
+# Inicializamos la neurona
 model = conectar_neurona()
 
 def obtener_analisis_ia(conn):
     try:
-        df_finanzas = pd.read_sql_query("SELECT * FROM finanzas ORDER BY id DESC LIMIT 5", conn)
-        resumen = df_finanzas.to_dict('records') if not df_finanzas.empty else "Sin datos"
+        df_f = pd.read_sql_query("SELECT monto, descripcion FROM finanzas ORDER BY id DESC LIMIT 5", conn)
+        datos = df_f.to_dict('records') if not df_f.empty else "Sin movimientos"
         
         if model:
-            response = model.generate_content(f"Soy Luis Quevedo. Analiza mis finanzas: {resumen}")
+            # Agregamos una instrucción clara para que la IA sepa quién eres
+            prompt = f"Luis Quevedo, experto en tecnología. Analiza mis finanzas: {datos}. Dame un consejo motivador corto."
+            response = model.generate_content(prompt)
             return response.text
-        return "La neurona sigue en modo espera."
+        return "La neurona está esperando órdenes."
     except Exception as e:
-        return f"Glitch: {e}"
+        return f"Error en análisis: {str(e)}"
 
 def procesar_consulta_asistente(consulta, conn):
-    # Si el modelo no cargó al inicio, reintentamos
     global model
     if not model: model = conectar_neurona()
     
     try:
         if model:
-            response = model.generate_content(f"Luis pregunta: {consulta}")
+            # Respuesta directa para el asistente
+            response = model.generate_content(f"Usuario Luis Quevedo pregunta: {consulta}")
             return response.text
-        return "No hay conexión con la neurona. Revisa tu internet o la API Key."
+        return "No se pudo establecer conexión con Gemini 2.0."
     except Exception as e:
-        return f"Error en chat: {e}"
+        return f"Error en el chat: {str(e)}"
