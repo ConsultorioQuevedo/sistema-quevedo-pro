@@ -1,31 +1,32 @@
 import google.generativeai as genai
 import pandas as pd
-
-# --- CONFIGURACIÓN CON TU LLAVE CONFIRMADA ---
-API_KEY = "AIzaSyB9tbJzUuo6TjgaWbu70ph93c_HUtfUW7o"
+import streamlit as st
 
 def conectar_neurona():
     try:
-        genai.configure(api_key=API_KEY)
-        # Usamos uno de los modelos que tu terminal confirmó que tienes (2.0 Flash)
-        # El nombre debe ser exacto como salió en tu lista
-        model = genai.GenerativeModel('gemini-2.0-flash')
+        # Usamos la llave guardada en los Secretos de Streamlit para mayor seguridad
+        api_key = st.secrets["GEMINI_API_KEY"]
+        genai.configure(api_key=api_key)
+        
+        # Usamos el modelo 1.5 Flash que es el más rápido y estable actualmente
+        model = genai.GenerativeModel('gemini-1.5-flash')
         return model
     except Exception as e:
-        print(f"Error al conectar: {e}")
+        st.error(f"Error al conectar con la neurona: {e}")
         return None
 
-# Inicializamos la neurona
-model = conectar_neurona()
+# Inicializamos la neurona una sola vez
+if "model_ia" not in st.session_state:
+    st.session_state.model_ia = conectar_neurona()
 
 def obtener_analisis_ia(conn):
     try:
         df_f = pd.read_sql_query("SELECT monto, descripcion FROM finanzas ORDER BY id DESC LIMIT 5", conn)
         datos = df_f.to_dict('records') if not df_f.empty else "Sin movimientos"
         
+        model = st.session_state.model_ia
         if model:
-            # Agregamos una instrucción clara para que la IA sepa quién eres
-            prompt = f"Luis Quevedo, experto en tecnología. Analiza mis finanzas: {datos}. Dame un consejo motivador corto."
+            prompt = f"Luis Quevedo, experto en tecnología. Analiza mis últimos movimientos financieros: {datos}. Dame un consejo motivador y profesional muy corto."
             response = model.generate_content(prompt)
             return response.text
         return "La neurona está esperando órdenes."
@@ -33,14 +34,17 @@ def obtener_analisis_ia(conn):
         return f"Error en análisis: {str(e)}"
 
 def procesar_consulta_asistente(consulta, conn):
-    global model
-    if not model: model = conectar_neurona()
+    model = st.session_state.model_ia
+    if not model: 
+        st.session_state.model_ia = conectar_neurona()
+        model = st.session_state.model_ia
     
     try:
         if model:
-            # Respuesta directa para el asistente
-            response = model.generate_content(f"Usuario Luis Quevedo pregunta: {consulta}")
+            # Instrucción de identidad para que Gemini siempre sepa a quién le responde
+            instruccion = f"Responde como la Neurona del Sistema Quevedo a Luis Rafael Quevedo. Consulta: {consulta}"
+            response = model.generate_content(instruccion)
             return response.text
-        return "No se pudo establecer conexión con Gemini 2.0."
+        return "No se pudo establecer conexión con las neuronas de Gemini."
     except Exception as e:
         return f"Error en el chat: {str(e)}"
