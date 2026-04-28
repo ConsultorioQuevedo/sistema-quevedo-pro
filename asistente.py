@@ -1,38 +1,44 @@
 import streamlit as st
-import pandas as pd
-import webbrowser
+import cerebro_quevedo as cerebro
 
 def mostrar_asistente(conn, c):
-    st.header("🤖 ASISTENTE DE QUEVEDO")
-    st.divider()
+    st.title("🧠 Neurona Interactiva - Sistema Quevedo")
+    st.write("Consulta lo que necesites sobre tus finanzas, salud o tecnología.")
 
-    try:
-        df = pd.read_sql_query("SELECT fecha, glucosa, presion FROM salud ORDER BY id DESC LIMIT 1", conn)
+    # 1. Inicializar la memoria del chat para que no se "muera" al refrescar
+    if "historial_chat" not in st.session_state:
+        st.session_state.historial_chat = []
+
+    # 2. Área de chat
+    with st.container():
+        for mensaje in st.session_state.historial_chat:
+            with st.chat_message(mensaje["role"]):
+                st.markdown(mensaje["content"])
+
+    # 3. Entrada de texto (El botón de envío ya no estará muerto)
+    if prompt := st.chat_input("¿En qué puedo ayudarte, Luis?"):
+        # Mostrar mensaje del usuario
+        with st.chat_message("user"):
+            st.markdown(prompt)
+        st.session_state.historial_chat.append({"role": "user", "content": prompt})
+
+        # Llamar a la neurona (cerebro_quevedo.py)
+        with st.chat_message("assistant"):
+            with st.spinner("La neurona está procesando..."):
+                respuesta = cerebro.procesar_consulta_asistente(prompt, conn)
+                st.markdown(respuesta)
         
-        if not df.empty:
-            glu = df['glucosa'].iloc[0]
-            pre = df['presion'].iloc[0]
-            
-            c1, c2 = st.columns(2)
-            with c1:
-                st.metric("Última Glucosa", f"{glu} mg/dL")
-                if glu > 140: st.error("Nivel Alto")
-                elif glu < 70: st.warning("Nivel Bajo")
-                else: st.success("Nivel Normal")
-            with c2:
-                st.metric("Última Presión", pre)
-        else:
-            st.info("Esperando datos para analizar...")
-    except:
-        st.error("No se pudo leer la base de datos.")
+        st.session_state.historial_chat.append({"role": "assistant", "content": respuesta})
 
-    st.divider()
-    st.subheader("📲 Comunicación Rápida")
-    btn1, btn2, btn3 = st.columns(3)
-    with btn1:
-        if st.button("💬 WhatsApp GBC"): webbrowser.open_new_tab("https://web.whatsapp.com/")
-    with btn2:
-        if st.button("💬 WhatsApp Valued"): webbrowser.open_new_tab("https://web.whatsapp.com/")
-    with btn3:
-        if st.button("📧 Abrir Gmail"): webbrowser.open_new_tab("https://mail.google.com/")
-                  
+    # 4. Botones de acción rápida (Ya no serán estáticos)
+    st.sidebar.subheader("Acciones Rápidas")
+    if st.sidebar.button("📊 Analizar mis Gastos"):
+        consulta = "Haz un resumen de mis últimos gastos de finanzas y dime si voy bien."
+        # Forzamos la ejecución
+        respuesta = cerebro.procesar_consulta_asistente(consulta, conn)
+        st.info(respuesta)
+
+    if st.sidebar.button("🏥 Estado de Salud"):
+        consulta = "Analiza mis últimos datos de salud y dame un consejo."
+        respuesta = cerebro.procesar_consulta_asistente(consulta, conn)
+        st.success(respuesta)

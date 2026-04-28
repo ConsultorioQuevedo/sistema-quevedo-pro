@@ -1,55 +1,46 @@
-import streamlit as st
 import google.generativeai as genai
-import os
+import pandas as pd
 
-def configurar_neurona():
-    """Configura la conexión con la máxima seguridad."""
-    # Prioridad 1: Secrets de Streamlit (Nube) | Prioridad 2: Archivo local (PC)
-    api_key = st.secrets.get("API_KEY_QUEVEDO")
-    if not api_key:
-        try:
-            import config
-            api_key = config.API_KEY_QUEVEDO
-        except ImportError:
-            api_key = None
-    
-    if api_key:
-        genai.configure(api_key=api_key)
-        return True
-    return False
+# --- CONFIGURACIÓN CON TU LLAVE CONFIRMADA ---
+API_KEY = "AIzaSyB9tbJzUuo6TjgaWbu70ph93c_HUtfUW7o"
 
-def consultar_especialista(pregunta_paciente, contexto_previo=""):
-    """
-    Activa al especialista médico de alto nivel.
-    Inyectamos un 'System Prompt' que define su personalidad y conocimientos.
-    """
-    if not configurar_neurona():
-        return "⚠️ Error de conexión: La neurona no tiene acceso a la API Key."
-
-    # --- EL CEREBRO DEL ESPECIALISTA (SYSTEM INSTRUCTION) ---
-    instrucciones_maestras = (
-        "Actúa como el Director Médico del Consultorio Quevedo, un especialista de élite "
-        "con conocimientos avanzados en medicina interna, cardiología y gestión de salud. "
-        "Tu objetivo es analizar datos de pacientes, interpretar tendencias de presión y glucosa, "
-        "y ofrecer orientación clínica basada en evidencia. "
-        "Sé profesional, preciso, humano pero analítico. "
-        "Si el usuario te da datos del 'Archivador' o de 'Salud', relaciónalos para dar un diagnóstico preventivo."
-    )
-
+def conectar_neurona():
     try:
-        # Usamos el modelo más potente disponible
-        model = genai.GenerativeModel(
-            model_name='gemini-1.5-flash', # O 'gemini-1.5-pro' para máxima escala
-            system_instruction=instrucciones_maestras
-        )
-        
-        # Iniciamos un chat para que tenga memoria de la conversación
-        chat = model.start_chat(history=[])
-        
-        prompt_final = f"Contexto del paciente: {contexto_previo}\n\nPregunta/Caso: {pregunta_paciente}"
-        
-        respuesta = chat.send_message(prompt_final)
-        return respuesta.text
-
+        genai.configure(api_key=API_KEY)
+        # Usamos uno de los modelos que tu terminal confirmó que tienes (2.0 Flash)
+        # El nombre debe ser exacto como salió en tu lista
+        model = genai.GenerativeModel('gemini-2.0-flash')
+        return model
     except Exception as e:
-        return f"❌ La neurona encontró un obstáculo: {str(e)}"
+        print(f"Error al conectar: {e}")
+        return None
+
+# Inicializamos la neurona
+model = conectar_neurona()
+
+def obtener_analisis_ia(conn):
+    try:
+        df_f = pd.read_sql_query("SELECT monto, descripcion FROM finanzas ORDER BY id DESC LIMIT 5", conn)
+        datos = df_f.to_dict('records') if not df_f.empty else "Sin movimientos"
+        
+        if model:
+            # Agregamos una instrucción clara para que la IA sepa quién eres
+            prompt = f"Luis Quevedo, experto en tecnología. Analiza mis finanzas: {datos}. Dame un consejo motivador corto."
+            response = model.generate_content(prompt)
+            return response.text
+        return "La neurona está esperando órdenes."
+    except Exception as e:
+        return f"Error en análisis: {str(e)}"
+
+def procesar_consulta_asistente(consulta, conn):
+    global model
+    if not model: model = conectar_neurona()
+    
+    try:
+        if model:
+            # Respuesta directa para el asistente
+            response = model.generate_content(f"Usuario Luis Quevedo pregunta: {consulta}")
+            return response.text
+        return "No se pudo establecer conexión con Gemini 2.0."
+    except Exception as e:
+        return f"Error en el chat: {str(e)}"

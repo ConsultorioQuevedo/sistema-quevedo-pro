@@ -3,28 +3,17 @@ import base_datos as db
 import os
 import inicio, biomonitor, finanzas, archivador, asistente, reportepdf_quevedo
 
-# --- 1. ESCUDO DE SEGURIDAD ---
-try:
-    import seguridad_quevedo as seg
-    # Activamos el escudo antes de cargar el menú
-    seg.EscudoSeguridad.asegurar_carpetas()
-except (ImportError, AttributeError):
-    # Si estás en la nube, es posible que no subas el módulo de seguridad personal
-    st.sidebar.warning("⚠️ Módulo de seguridad no detectado.")
+# --- CONFIGURACIÓN ---
+# Se ha actualizado el page_icon con tu archivo personal
+st.set_page_config(page_title="SISTEMA QUEVEDO", page_icon="icono.ico", layout="wide")
 
-# --- 2. CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="SISTEMA QUEVEDO", page_icon="🤖", layout="wide")
+# --- CONEXIÓN ---
+conn, c = db.inicializar_todo()
 
-# --- 3. CONEXIÓN INTELIGENTE (PC vs NUBE) ---
-# Esta función asegura que el programa no muera si no encuentra el Disco C:/
-def conectar_sistema():
-    # Nota: Tu base_datos.py ya tiene la lógica de DB_PATH en C:/
-    # Aquí simplemente llamamos a inicializar para asegurar que las tablas existan
-    return db.inicializar_todo() 
+# --- MENÚ LATERAL ---
+# Inserción de tu Logo personal en la parte superior de la barra lateral
+st.sidebar.image("logo.png", use_container_width=True)
 
-conn, c = conectar_sistema()
-
-# --- 4. MENÚ LATERAL ---
 st.sidebar.title("🤖 SISTEMA QUEVEDO")
 st.sidebar.write("Usuario: Luis Rafael Quevedo")
 
@@ -33,26 +22,26 @@ menu = st.sidebar.selectbox(
     ["Inicio", "Biomonitor", "Finanzas", "Archivador", "Asistente Inteligente", "Reportes PDF"]
 )
 
-# --- 5. LOGICA DE NAVEGACIÓN (CONTROL DE MÓDULOS) ---
-# Aquí es donde la artillería se despliega según tu selección
+# --- NAVEGACIÓN SINCRONIZADA ---
 if menu == "Inicio":
-    inicio.mostrar_inicio()
+    # Aquí es donde se activa tu diseño, el Log y la Neurona
+    inicio.mostrar_inicio(conn)
 
 elif menu == "Biomonitor":
-    biomonitor.mostrar_biomonitor()
+    biomonitor.mostrar_biomonitor(conn, c)
 
 elif menu == "Finanzas":
-    finanzas.mostrar_finanzas()
+    finanzas.mostrar_finanzas(conn, c)
 
 elif menu == "Archivador":
-    archivador.mostrar_archivador()
+    archivador.mostrar_archivador(conn, c)
 
 elif menu == "Asistente Inteligente":
-    asistente.mostrar_asistente()
+    # Le pasamos la conexión para que el cerebro de la IA funcione
+    asistente.mostrar_asistente(conn, c)
 
 elif menu == "Reportes PDF":
-    reportepdf_quevedo.mostrar_reportes()
+    reportepdf_quevedo.mostrar_pdf(conn)
 
-# --- 6. PIE DE PÁGINA ---
 st.sidebar.markdown("---")
 st.sidebar.info("Sistema Quevedo Pro v2.0 - Activo")

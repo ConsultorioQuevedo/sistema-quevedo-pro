@@ -1,48 +1,55 @@
-import streamlit as st
-import google.generativeai as genai
+import sqlite3
+import os
 
-def consultar_neurona(pregunta):
-    """
-    Activa la neurona especialista con configuración de seguridad 
-    y perfil médico de alto nivel.
-    """
-    # 1. BÚSQUEDA INTELIGENTE DE LA API KEY (Nube o Local)
-    # Primero intenta leer desde los Secrets de Streamlit (Nube)
-    api_key = st.secrets.get("API_KEY_QUEVEDO")
-    
-    # Si no la encuentra (estás en tu PC), intenta leerla de config.py
-    if not api_key:
-        try:
-            import config
-            api_key = config.API_KEY_QUEVEDO
-        except (ImportError, AttributeError):
-            api_key = None
-
-    # 2. VALIDACIÓN Y ACTIVACIÓN
-    if api_key:
-        try:
-            genai.configure(api_key=api_key)
-            
-            # DEFINICIÓN DEL PERFIL ESPECIALISTA (SYSTEM INSTRUCTION)
-            instrucciones_medicas = (
-                "Actúa como el Director Médico Jefe del Consultorio Quevedo. "
-                "Eres un experto en medicina interna y análisis de biomonitoreo. "
-                "Tus respuestas deben ser precisas, profesionales y enfocadas en "
-                "la prevención y salud del paciente."
-            )
-
-            # Configuración del modelo Gemini 1.5 Flash
-            model = genai.GenerativeModel(
-                model_name='gemini-1.5-flash',
-                system_instruction=instrucciones_medicas
-            )
-            
-            # 3. GENERACIÓN DE RESPUESTA
-            respuesta = model.generate_content(pregunta)
-            return respuesta.text
-
-        except Exception as e:
-            return f"⚠️ Error técnico en la neurona: {str(e)}"
+def inicializar_todo():
+    # 1. Rutas
+    db_dir = "C:/sistema_quevedo"
+    if not os.path.exists(db_dir):
+        db_path = "sistema_quevedo.db"
     else:
-        # Mensaje de error si no hay combustible (API KEY)
-        return "❌ Error: La neurona no tiene energía (Falta API Key en Secrets o config.py)."
+        db_path = f"{db_dir}/sistema_quevedo.db"
+
+    conn = sqlite3.connect(db_path, check_same_thread=False)
+    c = conn.cursor()
+
+    # 2. CREACIÓN DE TABLAS (Estructura base)
+    c.execute('''CREATE TABLE IF NOT EXISTS salud 
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, fecha TEXT, presion TEXT, glucosa REAL, notas TEXT)''')
+    
+    c.execute('''CREATE TABLE IF NOT EXISTS finanzas 
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, fecha TEXT, monto REAL, tipo TEXT)''')
+    
+    c.execute('''CREATE TABLE IF NOT EXISTS archivador 
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre_archivo TEXT, tipo TEXT, ruta TEXT, fecha TEXT)''')
+
+    # --- 3. EL ARREGLO MAESTRO (Para que no falle el INSERT) ---
+    # Intentamos agregar la columna 'descripcion' si no existe
+    try:
+        c.execute("ALTER TABLE finanzas ADD COLUMN descripcion TEXT")
+        conn.commit()
+    except sqlite3.OperationalError:
+        # Si ya existe, no hace nada y no da error
+        pass
+
+    conn.commit()
+    return conn, c
+
+def validar_monto(monto):
+    try:
+        valor = float(monto)
+        if valor <= 0: return False, "El monto debe ser mayor a cero."
+        return True, valor
+    except:
+        return False, "Por favor, ingrese un número válido."
+
+def eliminar_registro(tabla, id_reg):
+    try:
+        db_path = "C:/sistema_quevedo/sistema_quevedo.db" if os.path.exists("C:/sistema_quevedo") else "sistema_quevedo.db"
+        conn = sqlite3.connect(db_path)
+        c = conn.cursor()
+        c.execute(f"DELETE FROM {tabla} WHERE id = ?", (id_reg,))
+        conn.commit()
+        conn.close()
+        return True
+    except:
+        return False
