@@ -4,25 +4,15 @@ import os
 import inicio, biomonitor, finanzas, archivador, asistente, reportepdf_quevedo
 
 # --- CONFIGURACIÓN ---
-<<<<<<< HEAD
-# Se ha actualizado el page_icon con tu archivo personal
 st.set_page_config(page_title="SISTEMA QUEVEDO", page_icon="icono.ico", layout="wide")
 
 # --- CONEXIÓN ---
 conn, c = db.inicializar_todo()
 
 # --- MENÚ LATERAL ---
-# Inserción de tu Logo personal en la parte superior de la barra lateral
+# Inserción del logo sobre el título del menú
 st.sidebar.image("logo.png", use_container_width=True)
 
-=======
-st.set_page_config(page_title="SISTEMA QUEVEDO", page_icon="🤖", layout="wide")
-
-# --- CONEXIÓN ---
-conn, c = db.inicializar_todo()
-
-# --- MENÚ LATERAL ---
->>>>>>> 7197e242baa763fcd3dd6d99b0cfbb91886b9b5e
 st.sidebar.title("🤖 SISTEMA QUEVEDO")
 st.sidebar.write("Usuario: Luis Rafael Quevedo")
 
